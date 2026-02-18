@@ -32,7 +32,7 @@
 | **Evidencia 7** | **Evidencia 8** |
 | ![evidencia_7](img/evidencia_7.png) | ![evidencia_8](img/evidencia_8.png) |
 | **Evidencia 9** | **Evidencia 10** |
-| ![evidencia_9](img/evidencia_9.jpg) | ![evidencia_10](img/evidencia_10.png) |
+| ![evidencia_9](img/evidencia_9.jpeg) | ![evidencia_10](img/evidencia_10.png) |
 
 ---
 
