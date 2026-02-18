@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Divisas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface2: #1c1c1c;
+            --border: #2a2a2a;
+            --primary: #00d4aa;
+            --primary-dark: #00b89a;
+            --text: #f0f0f0;
+            --text-muted: #666;
+            --green: #00d4aa;
+            --red: #ff5252;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 20% 20%, rgba(0,212,170,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 80% 80%, rgba(0,212,170,0.04) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -1px;
+        }
+        .header h1 span { color: var(--primary); }
+        .header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+
+        /* Converter card */
+        .converter-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+        }
+
+        .amount-section {
+            margin-bottom: 20px;
+        }
+        .amount-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .amount-input {
+            width: 100%;
+            padding: 16px 18px;
+            background: var(--surface2);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            transition: border-color 0.2s;
+        }
+        .amount-input:focus { outline: none; border-color: var(--primary); }
+        .amount-input::placeholder { color: var(--text-muted); }
+
+        .currencies-row {
+            display: grid;
+            grid-template-columns: 1fr 48px 1fr;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .currency-select-group { }
+        .currency-select {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--surface2);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            appearance: none;
+        }
+        .currency-select:focus { outline: none; border-color: var(--primary); }
+
+        .swap-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--surface2);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            color: var(--primary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .swap-btn:hover {
+            background: rgba(0,212,170,0.1);
+            border-color: var(--primary);
+            transform: rotate(180deg);
+        }
+
+        .btn-convert {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: #0a0a0a;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-convert:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-convert:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Result */
+        .result-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 32px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .result-card.show { display: block; }
+
+        .result-main {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .result-from {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .result-arrow { color: var(--text-muted); font-size: 1.5rem; margin: 8px 0; }
+        .result-to {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -2px;
+        }
+        .result-rate {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+        }
+        .rate-box {
+            background: var(--surface2);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .updated-at {
+            text-align: center;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Rates table */
+        .rates-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .rates-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+        .rates-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .rate-item {
+            background: var(--surface2);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: border-color 0.2s;
+            border: 1px solid transparent;
+        }
+        .rate-item:hover { border-color: var(--border); }
+        .rate-flag { font-size: 1.3rem; }
+        .rate-info { flex: 1; }
+        .rate-code { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+        .rate-value { font-size: 1rem; font-weight: 700; color: white; }
+
+        .error-box {
+            background: rgba(255,82,82,0.1);
+            border: 1px solid rgba(255,82,82,0.3);
+            color: #ff8a80;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 0.88rem;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .api-note {
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 20px;
+        }
+        .api-note a { color: var(--primary); text-decoration: none; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💱 Conversor de <span>Divisas</span></h1>
+        <p>Tasas de cambio en tiempo real · ExchangeRate-API</p>
+    </div>
+
+    <div class="converter-card">
+        <div class="amount-section">
+            <div class="amount-label">Monto a convertir</div>
+            <input class="amount-input" type="number" id="montoInput" placeholder="1,000" value="1000" min="0" step="any">
+        </div>
+
+        <div class="currencies-row">
+            <div class="currency-select-group">
+                <div class="amount-label">De</div>
+                <select class="currency-select" id="monedaDe"></select>
+            </div>
+            <button class="swap-btn" onclick="swapMonedas()" title="Intercambiar">⇄</button>
+            <div class="currency-select-group">
+                <div class="amount-label">A</div>
+                <select class="currency-select" id="monedaA"></select>
+            </div>
+        </div>
+
+        <div class="error-box" id="errorBox"></div>
+
+        <button class="btn-convert" id="btnConvertir" onclick="convertir()">
+            💱 Convertir
+        </button>
+
+        <p class="api-note">
+            Necesitas una API key de <a href="https://www.exchangerate-api.com/" target="_blank">ExchangeRate-API</a> (gratis)
+        </p>
+    </div>
+
+    <div class="result-card" id="resultCard">
+        <div class="result-main">
+            <div class="result-from" id="resultFrom">—</div>
+            <div class="result-arrow">↓</div>
+            <div class="result-to" id="resultTo">—</div>
+        </div>
+        <div class="result-rate">
+            <div class="rate-box" id="rateInfo">1 USD = — MXN</div>
+            <div class="rate-box" id="inverseRate">1 MXN = — USD</div>
+        </div>
+        <div class="updated-at" id="updatedAt"></div>
+    </div>
+
+    <div class="rates-card">
+        <div class="rates-title">📊 Tasas desde USD (tiempo real)</div>
+        <div class="rates-grid" id="ratesGrid">
+            <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted)">Cargando tasas...</div>
+        </div>
+    </div>
+
+    <script>
+        let monedasData = {};
+
+        async function cargarMonedas() {
+            try {
+                const res = await fetch('/api/divisas/monedas');
+                const monedas = await res.json();
+                monedasData = monedas;
+
+                const deDe = document.getElementById('monedaDe');
+                const deA = document.getElementById('monedaA');
+
+                Object.entries(monedas).forEach(([code, info]) => {
+                    const opt1 = new Option(`${info.bandera} ${code} - ${info.nombre}`, code);
+                    const opt2 = new Option(`${info.bandera} ${code} - ${info.nombre}`, code);
+                    deDe.appendChild(opt1);
+                    deA.appendChild(opt2);
+                });
+
+                deDe.value = 'USD';
+                deA.value = 'MXN';
+            } catch(e) {}
+        }
+
+        async function convertir() {
+            const monto = parseFloat(document.getElementById('montoInput').value);
+            const de = document.getElementById('monedaDe').value;
+            const a = document.getElementById('monedaA').value;
+            const btn = document.getElementById('btnConvertir');
+            const errorBox = document.getElementById('errorBox');
+            const resultCard = document.getElementById('resultCard');
+
+            if (!monto || monto <= 0) {
+                showError('Ingresa un monto válido mayor a 0');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Convirtiendo...';
+            errorBox.style.display = 'none';
+
+            try {
+                const res = await fetch(`/api/divisas/convertir?monto=${monto}&de=${de}&a=${a}`);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                const infoD = monedasData[de] || {};
+                const infoA = monedasData[a] || {};
+
+                document.getElementById('resultFrom').textContent =
+                    `${infoD.bandera || ''} ${formatNum(monto)} ${de}`;
+                document.getElementById('resultTo').textContent =
+                    `${infoA.bandera || ''} ${formatNum(data.monto_convertido, 4)} ${a}`;
+                document.getElementById('rateInfo').textContent =
+                    `1 ${de} = ${formatNum(data.tasa_conversion, 4)} ${a}`;
+                document.getElementById('inverseRate').textContent =
+                    `1 ${a} = ${formatNum(1/data.tasa_conversion, 4)} ${de}`;
+                document.getElementById('updatedAt').textContent =
+                    '🕐 ' + data.ultima_actualizacion;
+
+                resultCard.classList.add('show');
+            } catch(err) {
+                showError('❌ ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💱 Convertir';
+            }
+        }
+
+        async function cargarTasasTabla() {
+            try {
+                const res = await fetch('/api/divisas/historico');
+                const tasas = await res.json();
+                if (tasas.error) throw new Error(tasas.error);
+
+                const grid = document.getElementById('ratesGrid');
+                const monedas = {
+                    'MXN': '🇲🇽', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'JPY': '🇯🇵',
+                    'BRL': '🇧🇷', 'ARS': '🇦🇷', 'CAD': '🇨🇦', 'AUD': '🇦🇺'
+                };
+
+                grid.innerHTML = Object.entries(tasas).map(([code, rate]) => `
+                    <div class="rate-item">
+                        <div class="rate-flag">${monedas[code] || '💱'}</div>
+                        <div class="rate-info">
+                            <div class="rate-code">USD → ${code}</div>
+                            <div class="rate-value">${formatNum(rate, 2)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(err) {
+                document.getElementById('ratesGrid').innerHTML =
+                    `<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px;font-size:0.85rem">
+                        ⚠️ Configura la API key para ver las tasas
+                    </div>`;
+            }
+        }
+
+        function swapMonedas() {
+            const de = document.getElementById('monedaDe');
+            const a = document.getElementById('monedaA');
+            const temp = de.value;
+            de.value = a.value;
+            a.value = temp;
+        }
+
+        function showError(msg) {
+            const box = document.getElementById('errorBox');
+            box.textContent = msg;
+            box.style.display = 'block';
+        }
+
+        function formatNum(n, decimals = 2) {
+            if (n === undefined || n === null) return '—';
+            if (Math.abs(n) >= 1000) return n.toLocaleString('es-MX', {maximumFractionDigits: decimals});
+            return n.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: decimals});
+        }
+
+        // Allow Enter key
+        document.getElementById('montoInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') convertir();
+        });
+
+        cargarMonedas();
+        cargarTasasTabla();
+    </script>
+</body>
+</html>

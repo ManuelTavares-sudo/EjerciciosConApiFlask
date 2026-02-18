@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Libros</title>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --cream: #faf7f0;
+            --warm: #f0e9d8;
+            --brown: #5c4033;
+            --brown-light: #8d6e63;
+            --accent: #c0392b;
+            --text: #2c1810;
+            --muted: #7a6355;
+            --border: #ddd0c0;
+            --surface: #ffffff;
+        }
+        body {
+            font-family: 'Source Sans 3', sans-serif;
+            background: var(--cream);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: var(--brown);
+            color: white;
+            padding: 28px 24px;
+            text-align: center;
+        }
+        .header h1 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+        .header p { font-size: 0.9rem; opacity: 0.75; }
+
+        /* Search area */
+        .search-area {
+            background: var(--warm);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 24px;
+        }
+        .search-inner {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 1rem;
+            background: white;
+            color: var(--text);
+            transition: border-color 0.2s;
+        }
+        .search-bar input:focus { outline: none; border-color: var(--brown); }
+        .btn-search {
+            padding: 12px 24px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        .btn-search:hover { opacity: 0.9; }
+        .btn-search:disabled { opacity: 0.5; }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filters select {
+            padding: 7px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 0.85rem;
+            background: white;
+            color: var(--text);
+        }
+
+        /* Popular tags */
+        .popular-tags {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 14px 24px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .tag-label { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+        .popular-tag {
+            padding: 4px 12px;
+            background: var(--warm);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: var(--brown);
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .popular-tag:hover { background: var(--brown); color: white; border-color: var(--brown); }
+
+        /* Main */
+        .main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            min-height: 28px;
+        }
+        .results-count {
+            font-size: 0.88rem;
+            color: var(--muted);
+        }
+        .results-count strong { color: var(--text); }
+
+        /* Books grid */
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .book-card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            animation: fadeIn 0.4s ease;
+        }
+        .book-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(92,64,51,0.15);
+        }
+
+        .book-cover {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: var(--warm);
+            display: block;
+        }
+        .book-cover-placeholder {
+            width: 100%;
+            height: 220px;
+            background: linear-gradient(135deg, var(--warm), var(--warm));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .book-info { padding: 14px; }
+        .book-title {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.3;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .book-author {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+        .book-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+        }
+        .book-rating {
+            color: #c0392b;
+            font-weight: 700;
+        }
+        .book-year { color: var(--muted); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(44,24,16,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: modalIn 0.3s ease;
+        }
+        .modal-img-row {
+            display: flex;
+            gap: 20px;
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            align-items: flex-start;
+        }
+        .modal-cover {
+            width: 130px;
+            min-width: 130px;
+            border-radius: 6px;
+            box-shadow: 4px 4px 16px rgba(0,0,0,0.2);
+        }
+        .modal-title {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .modal-author { font-style: italic; color: var(--muted); margin-bottom: 12px; }
+        .modal-stars { color: #c0392b; font-size: 1.1rem; margin-bottom: 8px; }
+        .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .modal-tag {
+            background: var(--warm);
+            color: var(--brown);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .modal-body { padding: 20px 24px; }
+        .modal-desc {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+        .modal-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .detail-item { font-size: 0.82rem; }
+        .detail-label { color: var(--muted); font-weight: 600; }
+        .detail-value { color: var(--text); }
+        .modal-actions { display: flex; gap: 10px; }
+        .btn-preview, .btn-buy {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-preview { background: var(--warm); color: var(--brown); border: 1.5px solid var(--border); }
+        .btn-buy { background: var(--accent); color: white; border: none; }
+        .btn-preview:hover, .btn-buy:hover { opacity: 0.85; }
+        .modal-close {
+            position: absolute;
+            top: 16px; right: 16px;
+            width: 32px; height: 32px;
+            background: var(--warm);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+
+        .loading-state, .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+        .big-emoji { font-size: 3rem; margin-bottom: 12px; }
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 Buscador de Libros</h1>
+        <p>Explora millones de libros con Google Books API</p>
+    </div>
+
+    <div class="search-area">
+        <div class="search-inner">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Buscar por título, autor o tema..."
+                    onkeydown="if(event.key==='Enter') buscar()">
+                <button class="btn-search" id="btnBuscar" onclick="buscar()">🔍 Buscar</button>
+            </div>
+            <div class="filters">
+                <select id="categoriaFilter">
+                    <option value="">📚 Todas las categorías</option>
+                </select>
+                <select id="idiomaFilter">
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="en">🇬🇧 Inglés</option>
+                    <option value="todos">🌍 Todos</option>
+                </select>
+                <select id="maxResults">
+                    <option value="12">12 resultados</option>
+                    <option value="20" selected>20 resultados</option>
+                    <option value="40">40 resultados</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="popular-tags" id="popularTags">
+        <span class="tag-label">🔥 Popular:</span>
+    </div>
+
+    <div class="main">
+        <div class="results-header">
+            <div class="results-count" id="resultsCount"></div>
+        </div>
+        <div id="content">
+            <div class="empty-state">
+                <div class="big-emoji">🔍</div>
+                <p>Busca un libro para comenzar</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Book Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)cerrarModal()">
+        <div class="modal" id="bookModal" style="position:relative">
+            <button class="modal-close" onclick="cerrarModal()">✕</button>
+            <div id="modalContent">Cargando...</div>
+        </div>
+    </div>
+
+    <script>
+        // Load categories
+        fetch('/api/libros/categorias').then(r => r.json()).then(cats => {
+            const sel = document.getElementById('categoriaFilter');
+            cats.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.textContent = c;
+                sel.appendChild(opt);
+            });
+        });
+
+        // Load popular
+        fetch('/api/libros/populares').then(r => r.json()).then(pops => {
+            const container = document.getElementById('popularTags');
+            pops.forEach(p => {
+                const tag = document.createElement('button');
+                tag.className = 'popular-tag';
+                tag.textContent = p.label;
+                tag.onclick = () => {
+                    document.getElementById('searchInput').value = p.query;
+                    buscar();
+                };
+                container.appendChild(tag);
+            });
+        });
+
+        async function buscar() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q) return;
+            const cat = document.getElementById('categoriaFilter').value;
+            const idioma = document.getElementById('idiomaFilter').value;
+            const max = document.getElementById('maxResults').value;
+            const btn = document.getElementById('btnBuscar');
+            const content = document.getElementById('content');
+            const count = document.getElementById('resultsCount');
+
+            btn.disabled = true;
+            content.innerHTML = '<div class="loading-state"><div class="big-emoji">⏳</div><p>Buscando libros...</p></div>';
+            count.textContent = '';
+
+            let url = `/api/libros/buscar?q=${encodeURIComponent(q)}&max=${max}&idioma=${idioma}`;
+            if (cat) url += `&categoria=${encodeURIComponent(cat)}`;
+
+            try {
+                const res = await fetch(url);
+                const libros = await res.json();
+                if (libros.error) throw new Error(libros.error);
+
+                if (libros.length === 0) {
+                    content.innerHTML = '<div class="empty-state"><div class="big-emoji">😕</div><p>No se encontraron libros. Intenta con otro término.</p></div>';
+                    return;
+                }
+
+                count.innerHTML = `<strong>${libros.length}</strong> libros encontrados`;
+
+                const grid = document.createElement('div');
+                grid.className = 'books-grid';
+                libros.forEach((libro, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'book-card';
+                    card.style.animationDelay = `${i * 0.03}s`;
+                    const stars = libro.rating ? '⭐'.repeat(Math.round(libro.rating)) : '';
+                    const year = libro.fecha_publicacion?.substring(0, 4) || '';
+
+                    card.innerHTML = `
+                        ${libro.imagen
+                            ? `<img class="book-cover" src="${libro.imagen}" alt="${libro.titulo}" onerror="this.outerHTML='<div class=book-cover-placeholder>📖</div>'">`
+                            : '<div class="book-cover-placeholder">📖</div>'}
+                        <div class="book-info">
+                            <div class="book-title">${libro.titulo}</div>
+                            <div class="book-author">${libro.autores[0] || 'Autor desconocido'}</div>
+                            <div class="book-meta">
+                                <span class="book-rating">${stars}</span>
+                                <span class="book-year">${year}</span>
+                            </div>
+                        </div>
+                    `;
+                    card.onclick = () => mostrarDetalle(libro.id);
+                    grid.appendChild(card);
+                });
+                content.innerHTML = '';
+                content.appendChild(grid);
+            } catch (err) {
+                content.innerHTML = `<div class="error-box">❌ ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function mostrarDetalle(bookId) {
+            const overlay = document.getElementById('modalOverlay');
+            const modalContent = document.getElementById('modalContent');
+            overlay.classList.add('show');
+            modalContent.innerHTML = '<div style="text-align:center;padding:40px">⏳ Cargando...</div>';
+
+            try {
+                const res = await fetch(`/api/libros/${bookId}`);
+                const libro = await res.json();
+                if (libro.error) throw new Error(libro.error);
+
+                const stars = libro.rating
+                    ? '⭐'.repeat(Math.round(libro.rating)) + ` (${libro.ratings_count || 0})`
+                    : 'Sin valoración';
+
+                modalContent.innerHTML = `
+                    <div class="modal-img-row">
+                        ${libro.imagen
+                            ? `<img class="modal-cover" src="${libro.imagen}" alt="">`
+                            : '<div style="width:130px;height:180px;background:var(--warm);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:3rem">📖</div>'}
+                        <div style="flex:1">
+                            <div class="modal-title">${libro.titulo}${libro.subtitulo ? ': ' + libro.subtitulo : ''}</div>
+                            <div class="modal-author">✍️ ${(libro.autores || []).join(', ') || 'Desconocido'}</div>
+                            <div class="modal-stars">${stars}</div>
+                            <div class="modal-tags">
+                                ${(libro.categorias || []).slice(0,3).map(c => `<span class="modal-tag">${c}</span>`).join('')}
+                                ${libro.idioma ? `<span class="modal-tag">🌐 ${libro.idioma.toUpperCase()}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="modal-desc">${libro.descripcion || 'Descripción no disponible.'}</div>
+                        <div class="modal-details">
+                            <div class="detail-item"><div class="detail-label">📅 Publicación</div><div class="detail-value">${libro.fecha_publicacion || '—'}</div></div>
+                            <div class="detail-item"><div class="detail-label">🏢 Editorial</div><div class="detail-value">${libro.editorial || '—'}</div></div>
+                            <div class="detail-item"><div class="detail-label">📄 Páginas</div><div class="detail-value">${libro.paginas || '—'}</div></div>
+                            <div class="detail-item"><div class="detail-label">💰 Precio</div><div class="detail-value">${libro.precio ? `${libro.precio} ${libro.moneda}` : 'No disponible'}</div></div>
+                        </div>
+                        <div class="modal-actions">
+                            ${libro.preview_link ? `<a class="btn-preview" href="${libro.preview_link}" target="_blank">👁️ Vista previa</a>` : ''}
+                            ${libro.compra_link ? `<a class="btn-buy" href="${libro.compra_link}" target="_blank">🛒 Comprar</a>` : `<a class="btn-preview" href="${libro.info_link || '#'}" target="_blank">ℹ️ Más info</a>`}
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                modalContent.innerHTML = `<div style="padding:20px"><div class="error-box">❌ ${err.message}</div></div>`;
+            }
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+        }
+
+        document.getElementById('searchInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') buscar();
+        });
+    </script>
+</body>
+</html>

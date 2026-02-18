@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clima en tu Ubicación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --sky: #0f172a;
+            --cloud: #1e3a5f;
+            --sun: #f59e0b;
+            --frost: #e0f2fe;
+            --card: rgba(255,255,255,0.07);
+            --border: rgba(255,255,255,0.12);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--sky);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Animated sky background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -20%, #1e3a8a 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 80% 80%, #0c4a6e 0%, transparent 50%),
+                linear-gradient(180deg, #0f172a 0%, #1a2744 100%);
+            z-index: -1;
+        }
+
+        /* Stars */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(1px 1px at 20% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+                radial-gradient(1px 1px at 80% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 50% 60%, rgba(255,255,255,0.5) 0%, transparent 100%),
+                radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+                radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,0.4) 0%, transparent 100%),
+                radial-gradient(1px 1px at 35% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
+                radial-gradient(1px 1px at 65% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 15% 40%, rgba(255,255,255,0.6) 0%, transparent 100%);
+            z-index: -1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            animation: fadeDown 0.6s ease;
+        }
+
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: white;
+            letter-spacing: -1px;
+            line-height: 1.1;
+        }
+
+        .header h1 span { color: var(--sun); }
+
+        .header p {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.95rem;
+            margin-top: 6px;
+            font-weight: 300;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            animation: fadeUp 0.6s ease 0.1s both;
+        }
+
+        .btn-get {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-get::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .btn-get:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245,158,11,0.4); }
+        .btn-get:hover::before { opacity: 1; }
+        .btn-get:active { transform: translateY(0); }
+        .btn-get:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--sun);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        /* Weather display */
+        .weather-display { display: none; margin-top: 28px; }
+
+        .location-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+            font-weight: 400;
+            margin-bottom: 20px;
+        }
+
+        .location-badge span { color: white; font-weight: 600; }
+
+        .temp-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .weather-icon {
+            width: 80px;
+            height: 80px;
+            filter: drop-shadow(0 0 12px rgba(245,158,11,0.5));
+        }
+
+        .temp-number {
+            font-size: 5rem;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+            letter-spacing: -3px;
+        }
+
+        .temp-number sup {
+            font-size: 1.8rem;
+            font-weight: 400;
+            letter-spacing: 0;
+            opacity: 0.7;
+        }
+
+        .weather-desc {
+            color: rgba(255,255,255,0.7);
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin-bottom: 4px;
+        }
+
+        .temp-range {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.85rem;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 24px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 14px 16px;
+            transition: background 0.2s;
+        }
+
+        .stat-item:hover { background: rgba(255,255,255,0.09); }
+
+        .stat-label {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .stat-value small {
+            font-size: 0.8rem;
+            font-weight: 400;
+            opacity: 0.6;
+        }
+
+        .error-msg {
+            display: none;
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+
+        .api-note {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.78rem;
+        }
+
+        .api-note a { color: rgba(255,255,255,0.5); text-decoration: none; }
+        .api-note a:hover { color: var(--sun); }
+
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .weather-display { animation: fadeIn 0.5s ease; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Clima <span>Actual</span></h1>
+            <p>Detecta tu ubicación y consulta el clima en tiempo real</p>
+        </div>
+
+        <div class="card">
+            <button class="btn-get" id="btnClima" onclick="obtenerClima()">
+                🌍 Obtener Clima Actual
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>Detectando tu ubicación...</p>
+            </div>
+
+            <div class="error-msg" id="errorMsg"></div>
+
+            <div class="weather-display" id="weatherDisplay">
+                <div class="location-badge">
+                    📍 <span id="ciudadNombre">—</span>&nbsp;·&nbsp;<span id="paisNombre">—</span>
+                </div>
+
+                <div class="temp-main">
+                    <img id="weatherIcon" class="weather-icon" src="" alt="clima">
+                    <div>
+                        <div class="temp-number" id="tempNum">—<sup>°C</sup></div>
+                        <div class="weather-desc" id="weatherDesc">—</div>
+                        <div class="temp-range" id="tempRange">—</div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">💧 Humedad</div>
+                        <div class="stat-value" id="humidity">—<small>%</small></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">💨 Viento</div>
+                        <div class="stat-value" id="wind">—<small> m/s</small></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">🌡️ Sensación</div>
+                        <div class="stat-value" id="sensacion">—<small>°C</small></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">⬆️ Presión</div>
+                        <div class="stat-value" id="presion">—<small> hPa</small></div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="api-note">
+                Necesitas una API key de <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        async function obtenerClima() {
+            const btn = document.getElementById('btnClima');
+            const loading = document.getElementById('loading');
+            const weatherDisplay = document.getElementById('weatherDisplay');
+            const errorMsg = document.getElementById('errorMsg');
+
+            btn.disabled = true;
+            loading.style.display = 'block';
+            weatherDisplay.style.display = 'none';
+            errorMsg.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/clima');
+                const data = await res.json();
+
+                if (data.error) throw new Error(data.error);
+
+                // Populate data
+                document.getElementById('ciudadNombre').textContent = data.ciudad;
+                document.getElementById('paisNombre').textContent = data.pais;
+                document.getElementById('tempNum').innerHTML = `${data.temperatura}<sup>°C</sup>`;
+                document.getElementById('weatherDesc').textContent = data.descripcion;
+                document.getElementById('tempRange').textContent = `Mín ${data.temp_min}° · Máx ${data.temp_max}°`;
+                document.getElementById('weatherIcon').src = `https://openweathermap.org/img/wn/${data.icono}@2x.png`;
+                document.getElementById('humidity').innerHTML = `${data.humedad}<small>%</small>`;
+                document.getElementById('wind').innerHTML = `${data.viento}<small> m/s</small>`;
+                document.getElementById('sensacion').innerHTML = `${data.sensacion}<small>°C</small>`;
+                document.getElementById('presion').innerHTML = `${data.presion}<small> hPa</small>`;
+
+                loading.style.display = 'none';
+                weatherDisplay.style.display = 'block';
+                btn.textContent = '🔄 Actualizar Clima';
+            } catch (err) {
+                loading.style.display = 'none';
+                errorMsg.textContent = '❌ Error: ' + err.message;
+                errorMsg.style.display = 'block';
+                btn.textContent = '🌍 Reintentar';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

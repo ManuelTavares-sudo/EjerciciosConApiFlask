@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Lugares Cercanos</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f0f4f8;
+            --surface: #ffffff;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --accent: #10b981;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        /* Top bar */
+        .topbar {
+            background: var(--primary);
+            padding: 20px 24px;
+            color: white;
+        }
+
+        .topbar-inner {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .topbar h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .topbar p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Controls */
+        .controls {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .controls-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .control-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-group select {
+            padding: 9px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            background: white;
+            color: var(--text);
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .control-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn-search {
+            padding: 9px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .btn-search:hover { background: var(--primary-dark); }
+        .btn-search:active { transform: scale(0.97); }
+        .btn-search:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Main content */
+        .main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .status-bar {
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            min-height: 24px;
+        }
+
+        .status-bar strong { color: var(--text); }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 0;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .loading-dots span {
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: bounce 0.6s ease infinite;
+        }
+
+        .loading-dots span:nth-child(2) { animation-delay: 0.1s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.2s; }
+
+        /* Places grid */
+        .places-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .place-card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .place-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .place-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .place-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.3;
+            flex: 1;
+        }
+
+        .dist-badge {
+            background: var(--bg);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+            margin-left: 8px;
+        }
+
+        .place-info {
+            font-size: 0.83rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .place-info div {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            margin-bottom: 3px;
+        }
+
+        .place-actions {
+            margin-top: 14px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-maps {
+            flex: 1;
+            padding: 8px;
+            background: #eff6ff;
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-maps:hover { background: #dbeafe; }
+
+        .empty-state {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+        .empty-state h3 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
+
+        .error-msg {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 0.9rem;
+        }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="topbar-inner">
+            <h1>📍 Buscador de Lugares</h1>
+            <p>Encuentra restaurantes, hospitales, tiendas y más cerca de ti</p>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="controls-inner">
+            <div class="control-group">
+                <label>Tipo de lugar</label>
+                <select id="tipoLugar">
+                    <option value="restaurant">🍽️ Restaurantes</option>
+                    <option value="cafe">☕ Cafeterías</option>
+                    <option value="hospital">🏥 Hospitales</option>
+                    <option value="farmacia">💊 Farmacias</option>
+                    <option value="tienda">🛒 Supermercados</option>
+                    <option value="gasolinera">⛽ Gasolineras</option>
+                    <option value="banco">🏦 Bancos</option>
+                    <option value="hotel">🏨 Hoteles</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Radio de búsqueda</label>
+                <select id="radio">
+                    <option value="500">500 metros</option>
+                    <option value="1000" selected>1 kilómetro</option>
+                    <option value="2000">2 kilómetros</option>
+                    <option value="5000">5 kilómetros</option>
+                </select>
+            </div>
+            <button class="btn-search" id="btnBuscar" onclick="buscarLugares()">
+                🔍 Buscar Lugares Cercanos
+            </button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="status-bar" id="statusBar">
+            Haz clic en "Buscar Lugares Cercanos" para comenzar.
+        </div>
+        <div class="error-msg" id="errorMsg"></div>
+        <div class="loading" id="loading">
+            <div class="loading-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <p>Obteniendo tu ubicación y buscando lugares...</p>
+        </div>
+        <div class="empty-state" id="emptyState">
+            <div class="emoji">🗺️</div>
+            <h3>Sin resultados</h3>
+            <p>No se encontraron lugares en este radio. Intenta con un radio mayor.</p>
+        </div>
+        <div class="places-grid" id="placesGrid"></div>
+    </div>
+
+    <script>
+        const tipoEmojis = {
+            restaurant: '🍽️', hospital: '🏥', cafe: '☕', pharmacy: '💊',
+            supermarket: '🛒', fuel: '⛽', bank: '🏦', hotel: '🏨'
+        };
+
+        async function buscarLugares() {
+            const btn = document.getElementById('btnBuscar');
+            const loading = document.getElementById('loading');
+            const grid = document.getElementById('placesGrid');
+            const statusBar = document.getElementById('statusBar');
+            const errorMsg = document.getElementById('errorMsg');
+            const emptyState = document.getElementById('emptyState');
+
+            btn.disabled = true;
+            loading.style.display = 'block';
+            grid.innerHTML = '';
+            emptyState.style.display = 'none';
+            errorMsg.style.display = 'none';
+            statusBar.textContent = 'Obteniendo tu ubicación...';
+
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        timeout: 10000,
+                        enableHighAccuracy: true
+                    });
+                });
+
+                const { latitude: lat, longitude: lon } = pos.coords;
+                const tipo = document.getElementById('tipoLugar').value;
+                const radio = document.getElementById('radio').value;
+
+                statusBar.textContent = 'Buscando lugares cercanos...';
+
+                const res = await fetch(`/api/lugares?lat=${lat}&lon=${lon}&tipo=${tipo}&radio=${radio}`);
+                const lugares = await res.json();
+
+                if (lugares.error) throw new Error(lugares.error);
+
+                loading.style.display = 'none';
+
+                if (lugares.length === 0) {
+                    emptyState.style.display = 'block';
+                    statusBar.innerHTML = `<strong>0 lugares</strong> encontrados cerca de ti`;
+                    return;
+                }
+
+                statusBar.innerHTML = `<strong>${lugares.length} lugares</strong> encontrados en un radio de ${(parseInt(radio)/1000).toFixed(1)} km`;
+
+                lugares.forEach((lugar, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'place-card';
+                    const emoji = tipoEmojis[lugar.tipo] || '📌';
+                    const distStr = lugar.distancia >= 1000
+                        ? `${(lugar.distancia/1000).toFixed(1)} km`
+                        : `${lugar.distancia} m`;
+
+                    card.innerHTML = `
+                        <div class="place-header">
+                            <div class="place-name">${emoji} ${lugar.nombre}</div>
+                            <div class="dist-badge">${distStr}</div>
+                        </div>
+                        <div class="place-info">
+                            <div>📍 <span>${lugar.direccion}</span></div>
+                            ${lugar.telefono ? `<div>📞 <span>${lugar.telefono}</span></div>` : ''}
+                            ${lugar.horario ? `<div>🕐 <span>${lugar.horario}</span></div>` : ''}
+                        </div>
+                        <div class="place-actions">
+                            <a class="btn-maps" href="https://www.google.com/maps?q=${lugar.lat},${lugar.lon}" target="_blank">
+                                🗺️ Ver en Google Maps
+                            </a>
+                        </div>
+                    `;
+                    card.style.animationDelay = `${i * 0.04}s`;
+                    grid.appendChild(card);
+                });
+
+            } catch (err) {
+                loading.style.display = 'none';
+                if (err.code === 1) {
+                    errorMsg.textContent = '⚠️ Acceso a ubicación denegado. Por favor, permite el acceso en tu navegador.';
+                } else {
+                    errorMsg.textContent = '❌ Error: ' + err.message;
+                }
+                errorMsg.style.display = 'block';
+                statusBar.textContent = '';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
