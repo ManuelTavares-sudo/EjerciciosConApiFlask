@@ -20,6 +20,22 @@
 
 ---
 
+## Evidencias
+
+| Evidencia 1 | Evidencia 2 |
+| :---: | :---: |
+| ![evidencia_1](img/evidencia_1.png) | ![evidencia_2](img/evidencia_2.png) |
+| **Evidencia 3** | **Evidencia 4** |
+| ![evidencia_3](img/evidencia_3.png) | ![evidencia_4](img/evidencia_4.png) |
+| **Evidencia 5** | **Evidencia 6** |
+| ![evidencia_5](img/evidencia_5.png) | ![evidencia_6](img/evidencia_6.png) |
+| **Evidencia 7** | **Evidencia 8** |
+| ![evidencia_7](img/evidencia_7.png) | ![evidencia_8](img/evidencia_8.png) |
+| **Evidencia 9** | **Evidencia 10** |
+| ![evidencia_9](img/evidencia_9.jpg) | ![evidencia_10](img/evidencia_10.png) |
+
+---
+
 ## 🛠️ Instalación
 ```bash
 # Clonar repositorio
